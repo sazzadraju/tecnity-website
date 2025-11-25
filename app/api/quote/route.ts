@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     // Send email using Resend
     const { data, error } = await resend.emails.send({
       from: 'Tecnity <onboarding@resend.dev>',
-      to: ['info@tecnity.com'],
+      to: ['sazzadraju@gmail.com'],
       replyTo: email,
       subject: `New Quote Request from ${name}`,
       html: `
