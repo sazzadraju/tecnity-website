@@ -7,6 +7,7 @@ import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { QuoteModal } from "@/components/modals/quote-modal";
 import { Toaster } from "@/components/ui/sonner";
+import { Analytics } from "@vercel/analytics/react";
 
 const outfit = Outfit({
   weight: ["300", "400", "500", "600", "700", "800", "900"],
@@ -33,6 +34,7 @@ export default function RootLayout({
         <Footer />
         <QuoteModal open={quoteModalOpen} onOpenChange={setQuoteModalOpen} />
         <Toaster />
+        <Analytics />
       </body>
     </html>
   );
