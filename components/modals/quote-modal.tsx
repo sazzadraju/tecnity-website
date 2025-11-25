@@ -22,15 +22,20 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
+import { services } from "@/lib/data/services";
 
 const quoteSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
-  phone: z.string().min(10, "Phone number must be at least 10 digits"),
+  phone: z.string().optional().refine((val) => !val || val.length >= 7, {
+    message: "Phone number must be at least 7 digits"
+  }),
   service: z.string().min(1, "Please select a service"),
   projectDetails: z.string().min(10, "Please provide project details"),
   budget: z.string().optional(),
+  website: z.string().optional(), // honeypot
 });
 
 type QuoteFormData = z.infer<typeof quoteSchema>;
@@ -51,13 +56,32 @@ export function QuoteModal({ open, onOpenChange }: { open: boolean; onOpenChange
   });
 
   const onSubmit = async (data: QuoteFormData) => {
+    // Honeypot check
+    if (data.website) {
+      toast.error("Invalid submission");
+      return;
+    }
+
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    console.log(data);
-    toast.success("Quote request submitted successfully!");
-    form.reset();
-    onOpenChange(false);
-    setIsSubmitting(false);
+    try {
+      const response = await fetch('/api/quote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        toast.success("Quote request submitted successfully! We'll contact you soon.");
+        form.reset();
+        onOpenChange(false);
+      } else {
+        toast.error("Failed to submit. Please try again.");
+      }
+    } catch (error) {
+      toast.error("Something went wrong. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -106,9 +130,9 @@ export function QuoteModal({ open, onOpenChange }: { open: boolean; onOpenChange
                 name="phone"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone</FormLabel>
+                    <FormLabel>Phone (Optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="+880 1234 567890" {...field} />
+                      <Input placeholder="+1234567890" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -116,16 +140,57 @@ export function QuoteModal({ open, onOpenChange }: { open: boolean; onOpenChange
               />
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="service"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Service Interested In</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a service" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {services.map((service) => (
+                          <SelectItem key={service.id} value={service.title}>
+                            {service.title}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="Others">Others</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="budget"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Budget Range (Optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g., $5,000 - $10,000" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Honeypot field - hidden from users */}
             <FormField
               control={form.control}
-              name="service"
+              name="website"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Service Interested In</FormLabel>
+                <FormItem className="hidden">
                   <FormControl>
-                    <Input placeholder="e.g., Custom Software Development" {...field} />
+                    <Input {...field} tabIndex={-1} autoComplete="off" />
                   </FormControl>
-                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -142,20 +207,6 @@ export function QuoteModal({ open, onOpenChange }: { open: boolean; onOpenChange
                       className="min-h-[100px]"
                       {...field}
                     />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="budget"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Budget Range (Optional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., $5,000 - $10,000" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
