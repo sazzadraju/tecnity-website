@@ -15,8 +15,9 @@ export async function POST(request: Request) {
 
     // Send email using Resend
     const { data, error } = await resend.emails.send({
-      from: 'Tecnity Website <onboarding@resend.dev>', // Change this after domain verification
+      from: 'Tecnity <onboarding@resend.dev>',
       to: ['info@tecnity.com'],
+      replyTo: email,
       subject: `New Quote Request from ${name}`,
       html: `
         <h2>New Quote Request</h2>
